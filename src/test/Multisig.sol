@@ -27,13 +27,13 @@ contract MultisigTest is DSTest {
         // assertEq doesn't work for bools rn...
         uint result = 0;
         // non-owner
-        if (multisig.isOwner(address(0x123))) {
+        if (multisig.owners(address(0x123))) {
             result = 1;
         }
         assertEq(result, 0);
         // owner
         result = 0;
-        if (multisig.isOwner(addrs[0])) {
+        if (multisig.owners(addrs[0])) {
             result = 1;
         }
         assertEq(result, 1);

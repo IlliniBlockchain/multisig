@@ -24,9 +24,9 @@ contract Multisig {
         mapping (address => bool) signers;
     }
 
-    mapping (address => bool) owners;
-    mapping (bytes32 => Transaction) txs;
-    mapping (bytes32 => PendingTx) pending;
+    mapping (address => bool) public owners;
+    mapping (bytes32 => Transaction) public txs;
+    mapping (bytes32 => PendingTx) public pending;
 
     constructor (address[] memory initialOwners) {
         for (uint i = 0; i < initialOwners.length; i += 1) {
@@ -35,7 +35,7 @@ contract Multisig {
     }
 
     modifier onlyOwner {
-        require(isOwner(msg.sender));
+        require(owners[msg.sender]);
         _;
     }
 
@@ -43,10 +43,6 @@ contract Multisig {
     modifier onlyContract {
         require(msg.sender == address(this));
         _;
-    }
-
-    function isOwner(address addr) public returns (bool) {
-        return owners[addr];
     }
 
     /// @notice Adds an owner
