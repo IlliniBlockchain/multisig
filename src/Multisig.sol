@@ -35,7 +35,7 @@ contract Multisig {
     }
 
     modifier onlyOwner {
-        require(owners[msg.sender]);
+        require(isOwner(msg.sender));
         _;
     }
 
@@ -43,6 +43,10 @@ contract Multisig {
     modifier onlyContract {
         require(msg.sender == address(this));
         _;
+    }
+
+    function isOwner(address addr) public returns (bool) {
+        return owners[addr];
     }
 
     /// @notice Adds an owner
