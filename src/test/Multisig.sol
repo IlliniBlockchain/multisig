@@ -36,6 +36,7 @@ contract MultisigTest is DSTest {
         if (multisig.owners(addrs[0])) {
             result = 1;
         }
+        uint x = 0;
         assertEq(result, 1);
     }
 
