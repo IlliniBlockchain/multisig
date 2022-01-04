@@ -16,10 +16,7 @@ contract MultisigTest is DSTest {
     // all tests must start with "test"
     function testSanity() public {
         string memory x = "hello";
-        assertEq(
-            x,
-            "hello"
-        );
+        assertEq(x, "hello");
     }
 
     // test modifiers: onlyOwner, onlyContract
