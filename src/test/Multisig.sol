@@ -51,6 +51,65 @@ contract MultisigTest is DSTest {
     }
 
     // test addOwner, removeOwner, changeOwner
+    function testAddOwner() public {
+        address newOwner1 = address(0x123);
+        address newOwner2 = address(0x456);
+
+        // make sure they aren't already owners
+        uint result = 0;
+        if (multisig.owners(newOwner1) || multisig.owners(newOwner2)) {
+            result = 1;
+        }
+        assertEq(result, 0, "newOwners already owners");
+
+        vm.startPrank(address(multisig));
+        // add an owner
+        multisig.addOwner(newOwner1);
+        result = 0;
+        if (multisig.owners(newOwner1)) {
+            result = 1;
+        }
+        assertEq(result, 1, "newOwner1 is not an owner");
+
+        // add another
+        multisig.addOwner(newOwner2);
+        result = 0;
+        if (multisig.owners(newOwner2)) {
+            result = 1;
+        }
+        assertEq(result, 1, "newOwner2 is not an owner");
+        vm.stopPrank();
+
+    }
+
+    function testRemoveOwner() public {
+
+        // make sure they are already owners
+        uint result = 0;
+        if (multisig.owners(owner1) || multisig.owners(owner2)) {
+            result = 1;
+        }
+        assertEq(result, 1, "Owners to remove are not currently owners");
+
+        vm.startPrank(address(multisig));
+        // add an owner
+        multisig.removeOwner(owner1);
+        result = 0;
+        if (multisig.owners(owner1)) {
+            result = 1;
+        }
+        assertEq(result, 0, "removed owner1 is still owner");
+
+        // add another
+        multisig.removeOwner(owner2);
+        result = 0;
+        if (multisig.owners(owner2)) {
+            result = 1;
+        }
+        assertEq(result, 0, "removed owner2 is still owner");
+        vm.stopPrank();
+
+    }
 
     // test createTx, signTx, sendTx
     function testCreateTx() public {
@@ -77,7 +136,7 @@ contract MultisigTest is DSTest {
         if (multisig.getSigner(pendingHashObs, owner1)) {
             result = 1;
         }
-        assertEq(result, 1);
+        assertEq(result, 1, "createTx did not add signer");
     }
 
     function testSignTx() public {
@@ -105,7 +164,7 @@ contract MultisigTest is DSTest {
         if (multisig.getSigner(pendingHashObs, owner1)) {
             result = 1;
         }
-        assertEq(result, 1);
+        assertEq(result, 1, "signTx did not add signer");
 
         // sign with already signed owner, check nSigned
         vm.prank(owner2);
@@ -130,7 +189,7 @@ contract MultisigTest is DSTest {
         multisig.signTx(pendingHashObs);
 
         // check sent (immediately)
-        assertEq(to.balance, initialBalance + value);
+        assertEq(to.balance, initialBalance + value, "multisig tx failed to send ether");
 
         // function call
         uint i = 1;
@@ -149,7 +208,7 @@ contract MultisigTest is DSTest {
         multisig.signTx(pendingHashObs);
 
         // check sent (immediately)
-        assertEq(testContract.i(), i + j);
+        assertEq(testContract.i(), i + j, "multisig tx failed to call contract");
         
     }
 
