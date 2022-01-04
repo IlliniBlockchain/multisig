@@ -33,12 +33,13 @@ contract MultisigTest is DSTest {
         address to = address(0x123);
         uint value = 1;
         bytes memory data;
+        uint nNeeded = 2;
         vm.expectRevert("msg.sender is not an owner");
-        multisig.createTx(to, value, data);
+        multisig.createTx(to, value, data, nNeeded);
         vm.prank(owner1);
-        multisig.createTx(to, value, data);
+        multisig.createTx(to, value, data, nNeeded);
         vm.prank(owner2);
-        multisig.createTx(to, value, data);
+        multisig.createTx(to, value, data, nNeeded);
     }
     
     function testOnlyContract() public {
@@ -55,9 +56,31 @@ contract MultisigTest is DSTest {
     function testCreateTx() public {
         address to = address(0x123);
         uint value = 1;
-        bytes memory data;
+        bytes memory data = abi.encode("asdf");
+        uint nNeeded = 2;
+
+        bytes32 txHash = keccak256(abi.encodePacked(to, value, data));
+        bytes32 pendingHash = keccak256(abi.encodePacked(txHash, nNeeded, block.number));
+
         vm.prank(owner1);
-        multisig.createTx(to, value, data);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+        assertEq(pendingHashObs, pendingHash, "incorrect pendingHash");
+
+        bytes32 txHashObs;
+        uint nNeededObs;
+        uint nSignedObs;
+        (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHash);
+        assertEq(txHashObs, txHash, "incorrect txHash");
+        assertEq(nNeededObs, nNeeded, "incorrect nNeeded");
+        assertEq(nSignedObs, 1, "nSignedObs != 1");
+    }
+
+    function testSignTx() public {
+        
+    }
+
+    function testSendTx() public {
+
     }
 
 }

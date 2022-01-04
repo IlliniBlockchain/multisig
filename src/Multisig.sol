@@ -24,8 +24,8 @@ contract Multisig {
 
     struct PendingTx {
         bytes32 txHash;
-        uint n_needed;
-        uint n_signed;
+        uint nNeeded;
+        uint nSigned;
         mapping (address => bool) signers;
     }
 
@@ -84,10 +84,12 @@ contract Multisig {
 
     /// @notice Initialize a transaction and adds first signature
     /// @dev Create tx and pending hash using keccak256(abi.encodePacked(...))
+    /// @dev Include block.number to differentiate pendingHash's with same data
     /// @param to Address to send transaction to
     /// @param value Amount in wei (eth/1e18) to send
     /// @param data Transaction data
-    function createTx(address to, uint value, bytes memory data) public onlyOwner {
+    /// @return pendingHash for the created tx
+    function createTx(address to, uint value, bytes memory data, uint nNeeded) public onlyOwner returns (bytes32) {
         // create Transaction
         // create PendingTx
         // signTx
@@ -103,7 +105,7 @@ contract Multisig {
     }
 
     /// @notice Removes existing signature from a PendingTx
-    /// @dev Check if they're signature exists to properly update n_signed
+    /// @dev Check if they're signature exists to properly update nSigned
     /// @param pendingHash Hash that maps to the PendingTx to unsign
     function unsignTx(bytes32 pendingHash) public onlyOwner {
         // remove signature from tx
