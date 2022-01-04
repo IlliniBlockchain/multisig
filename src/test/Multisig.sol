@@ -74,13 +74,44 @@ contract MultisigTest is DSTest {
         assertEq(nNeededObs, nNeeded, "incorrect nNeeded");
         assertEq(nSignedObs, 1, "nSignedObs != 1");
         uint result = 0; // No assertEq for bools
-        if (multisig.getSigner(pendingHash, owner1)) {
+        if (multisig.getSigner(pendingHashObs, owner1)) {
             result = 1;
         }
         assertEq(result, 1);
     }
 
     function testSignTx() public {
+        // createTx
+        address to = address(0x123);
+        uint value = 1;
+        bytes memory data = abi.encode("asdf");
+        uint nNeeded = 2;
+
+        vm.prank(owner1);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+
+        // try sign with another owner
+        vm.prank(owner2);
+        multisig.signTx(pendingHashObs);
+        
+        // check pending hash signers, nSigned
+        bytes32 txHashObs;
+        uint nNeededObs;
+        uint nSignedObs;
+        (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHashObs);
+        assertEq(nSignedObs, 2, "incorrect nSignedObs");
+
+        uint result = 0; // No assertEq for bools
+        if (multisig.getSigner(pendingHashObs, owner1)) {
+            result = 1;
+        }
+        assertEq(result, 1);
+
+        // sign with already signed owner, check nSigned
+        vm.prank(owner2);
+        multisig.signTx(pendingHashObs);
+        (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHashObs);
+        assertEq(nSignedObs, 2, "incorrect nSignedObs");
 
     }
 
