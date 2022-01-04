@@ -85,7 +85,7 @@ contract MultisigTest is DSTest {
         address to = address(0x123);
         uint value = 1;
         bytes memory data = abi.encode("asdf");
-        uint nNeeded = 2;
+        uint nNeeded = 3;
 
         vm.prank(owner1);
         bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
@@ -112,11 +112,58 @@ contract MultisigTest is DSTest {
         multisig.signTx(pendingHashObs);
         (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHashObs);
         assertEq(nSignedObs, 2, "incorrect nSignedObs");
-
     }
 
-    function testSendTx() public {
+    function testSignAndSendTx() public {
+        // sending eth
+        address to = owner1;
+        uint value = 30;
+        bytes memory data = abi.encode("");
+        uint nNeeded = 2;
+        uint initialBalance = to.balance;
 
+        vm.prank(owner1);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+
+        // sign
+        vm.prank(owner2);
+        multisig.signTx(pendingHashObs);
+
+        // check sent (immediately)
+        assertEq(to.balance, initialBalance + value);
+
+        // function call
+        uint i = 1;
+        uint j = 2;
+        TestContract testContract = new TestContract(i);
+        to = address(testContract);
+        value = 0;
+        data = abi.encodeWithSignature("callMe(uint256)", j);
+        nNeeded = 2;
+
+        vm.prank(owner1);
+        pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+
+        // sign
+        vm.prank(owner2);
+        multisig.signTx(pendingHashObs);
+
+        // check sent (immediately)
+        assertEq(testContract.i(), i + j);
+        
+    }
+
+}
+
+contract TestContract {
+    uint public i;
+
+    constructor(uint _i) {
+        i = _i;
+    }
+
+    function callMe(uint j) public {
+        i += j;
     }
 
 }
