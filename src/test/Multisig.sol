@@ -1,11 +1,15 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.11;
 
 import "ds-test/test.sol";
+import "./Vm.sol"; // foundry cheat codes
+import "./console.sol"; // hardhat console.log - run forge test --verbosity 3
+
 import 'src/Multisig.sol';
 
 contract MultisigTest is DSTest {
 
+    Vm vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     address[] public addrs = [address(this), 0xEBcFba9f74a34f7118D1D2C078fCff4719D6518D, 0x534347d1766E89dB52C440AF833f0384d861B13E];
     Multisig multisig;
 
@@ -16,6 +20,7 @@ contract MultisigTest is DSTest {
     // all tests must start with "test"
     function testSanity() public {
         string memory x = "hello";
+        console.log("console.log sanity check");
         assertEq(x, "hello");
     }
 
