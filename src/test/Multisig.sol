@@ -73,10 +73,15 @@ contract MultisigTest is DSTest {
         assertEq(txHashObs, txHash, "incorrect txHash");
         assertEq(nNeededObs, nNeeded, "incorrect nNeeded");
         assertEq(nSignedObs, 1, "nSignedObs != 1");
+        uint result = 0; // No assertEq for bools
+        if (multisig.getSigner(pendingHash, owner1)) {
+            result = 1;
+        }
+        assertEq(result, 1);
     }
 
     function testSignTx() public {
-        
+
     }
 
     function testSendTx() public {

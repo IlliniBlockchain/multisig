@@ -52,6 +52,12 @@ contract Multisig {
     }
 
     /// FUNCTIONS
+
+    /// @notice Helper function to view PendingTx signers from test contract
+    function getSigner(bytes32 pendingHash, address signer) external view returns (bool) {
+        return pending[pendingHash].signers[signer];
+    }
+
     /// @notice Initialize multisig with initial owners
     /// @param initialOwners List of addresses of owners
     constructor (address[] memory initialOwners) {
