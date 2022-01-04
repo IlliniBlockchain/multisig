@@ -24,8 +24,8 @@ contract Multisig {
 
     struct PendingTx {
         bytes32 txHash;
-        uint n_needed;
-        uint n_signed;
+        uint nNeeded;
+        uint nSigned;
         mapping (address => bool) signers;
     }
 
@@ -37,7 +37,7 @@ contract Multisig {
     /// MODIFIERS
     /// Functions with this modifier can only be called by an owner
     modifier onlyOwner {
-        require(owners[msg.sender]);
+        require(owners[msg.sender], "msg.sender is not an owner");
         _;
     }
 
@@ -47,11 +47,17 @@ contract Multisig {
         functionality to extend to these functions.
      */
     modifier onlyContract {
-        require(msg.sender == address(this));
+        require(msg.sender == address(this), "msg.sender is not this contract");
         _;
     }
 
     /// FUNCTIONS
+
+    /// @notice Helper function to view PendingTx signers from test contract
+    function getSigner(bytes32 pendingHash, address signer) external view returns (bool) {
+        return pending[pendingHash].signers[signer];
+    }
+
     /// @notice Initialize multisig with initial owners
     /// @param initialOwners List of addresses of owners
     constructor (address[] memory initialOwners) {
@@ -84,10 +90,12 @@ contract Multisig {
 
     /// @notice Initialize a transaction and adds first signature
     /// @dev Create tx and pending hash using keccak256(abi.encodePacked(...))
+    /// @dev Include block.number to differentiate pendingHash's with same data
     /// @param to Address to send transaction to
     /// @param value Amount in wei (eth/1e18) to send
     /// @param data Transaction data
-    function createTx(address to, uint value, bytes memory data) public onlyOwner {
+    /// @return pendingHash for the created tx
+    function createTx(address to, uint value, bytes memory data, uint nNeeded) public onlyOwner returns (bytes32) {
         // create Transaction
         // create PendingTx
         // signTx
@@ -103,7 +111,7 @@ contract Multisig {
     }
 
     /// @notice Removes existing signature from a PendingTx
-    /// @dev Check if they're signature exists to properly update n_signed
+    /// @dev Check if they're signature exists to properly update nSigned
     /// @param pendingHash Hash that maps to the PendingTx to unsign
     function unsignTx(bytes32 pendingHash) public onlyOwner {
         // remove signature from tx
