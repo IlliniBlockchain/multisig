@@ -96,10 +96,26 @@ contract Multisig {
     /// @param data Transaction data
     /// @return pendingHash for the created tx
     function createTx(address to, uint value, bytes memory data, uint nNeeded) public onlyOwner returns (bytes32) {
+
         // create Transaction
+        bytes32 txHash = keccak256(abi.encodePacked(to, value, data));
+        txs[txHash] = Transaction({ to: to, value: value, data: data });
+
         // create PendingTx
-        // signTx
+        bytes32 pendingHash = keccak256(abi.encodePacked(txHash, nNeeded, block.number));
+        PendingTx storage pendingTx = pending[pendingHash];
+        pendingTx.txHash = txHash;
+        pendingTx.nNeeded = nNeeded;
+        pendingTx.nSigned = 0;
+
         // log event
+        emit CreateTx(to, value, data, txHash, pendingHash);
+
+        // signTx
+        pendingTx.signers[msg.sender] = true;
+        pendingTx.nSigned += 1;
+
+        return pendingHash;
     }
 
     /// @notice Signs off on a transaction and execute it if enough signatures
