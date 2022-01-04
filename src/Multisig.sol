@@ -37,7 +37,7 @@ contract Multisig {
     /// MODIFIERS
     /// Functions with this modifier can only be called by an owner
     modifier onlyOwner {
-        require(owners[msg.sender]);
+        require(owners[msg.sender], "msg.sender is not an owner");
         _;
     }
 
@@ -47,7 +47,7 @@ contract Multisig {
         functionality to extend to these functions.
      */
     modifier onlyContract {
-        require(msg.sender == address(this));
+        require(msg.sender == address(this), "msg.sender is not this contract");
         _;
     }
 
