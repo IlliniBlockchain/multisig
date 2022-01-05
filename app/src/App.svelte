@@ -1,8 +1,16 @@
 <script>
+	import { Router, Route } from 'svelte-routing';
+	import { Home } from './pages'
 	import Layout from './Layout.svelte'
-	let name = 'world';
+
+	export let url = '';
 </script>
 
+<!-- App.svelte should be for routing and
+	global state, i.e. wallet connection -->
+
 <Layout>
-<h1>Hello {name}!</h1>
+	<Router url={url}>
+		<Route path="/"><Home/></Route>
+	</Router>
 </Layout>

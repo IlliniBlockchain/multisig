@@ -5,12 +5,26 @@
 	url("/fonts/Inter-roman.var.woff2") format("woff2 supports variations(gvar)");
 }
 
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap'); */
+
+html {
+	--orange: #ed7014;
+	--light-orange: #fa8128;
+	--dark-gray: rgb(25, 27, 31);
+}
+
 body {
 	background-color: #212429;
 	color: #fff;
 	margin: 0;
+	font-family: Inter custom;
+	
+	-webkit-font-smoothing: antialiased;
+	font-feature-settings: 'ss01' on,'ss02' on,'cv01' on,'cv03' on;
+}
+
+* {
 	box-sizing: border-box;
-	font-family: "Inter custom";
 }
 
 a {
