@@ -16,13 +16,15 @@ html {
 	--blue: rgb(33, 114, 229);
 	--light-blue: #367ee3;
 	--green: rgb(39, 174, 96);
+	--light-text-color: #fff;
 }
 
 body {
 	background-color: #212429;
-	color: #fff;
+	color: var(--light-text-color);
 	margin: 0;
 	font-family: Inter custom;
+	line-height: 1.5;
 
 	word-wrap: break-word;
 	
@@ -35,10 +37,6 @@ body {
 }
 
 a {
-	color: rgb(0,100,200);
+	color: var(--light-text-color);
 	text-decoration: none;
-}
-
-a:hover {
-	text-decoration: underline;
 }

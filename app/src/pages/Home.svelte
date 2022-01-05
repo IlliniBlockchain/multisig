@@ -1,4 +1,5 @@
 <script>
+	import { Link } from 'svelte-routing'
 	import { Button } from '../components'
 
 	const testTxs = [
@@ -14,19 +15,19 @@
 			<h1 class='page-title'>Transactions</h1>
 		</div>
 		<div class='right'>
-			<div><Button>Create Transaction</Button></div>
-			<div><Button blue>Send Money</Button></div>
+			<div><Link to='/create'><Button>Create Transaction</Button></Link></div>
+			<div><Link to='/send'><Button blue>Send Money</Button></Link></div>
 		</div>
 	</div>
 	<div class='txs'>
 		{#each txs as { pendingHash, name, executed }, i}
-			<div class='tx'>
+			<Link to={'/tx/' + pendingHash}><div class='tx'>
 				<p class='pending-hash'>{pendingHash.slice(0, 5)}</p>
 				<h3 class='name'>{name}</h3>
 				<div class={executed ? 'executed' : 'pending'}>
 					{executed ? 'executed' : 'pending'}
 				</div>
-			</div>
+			</div></Link>
 		{/each}
 	</div>
 </div>
@@ -65,6 +66,7 @@
 		display: flex;
 		justify-content: space-between;
 		padding: 10px 25px;
+		transition: 0.1s;
 	}
 
 	.tx:hover {
