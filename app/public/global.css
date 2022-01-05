@@ -10,7 +10,12 @@
 html {
 	--orange: #ed7014;
 	--light-orange: #fa8128;
+	--darker-gray: rgb(21, 23, 26);
 	--dark-gray: rgb(25, 27, 31);
+	--gray: rgb(30, 32, 33);
+	--blue: rgb(33, 114, 229);
+	--light-blue: #367ee3;
+	--green: rgb(39, 174, 96);
 }
 
 body {
@@ -18,6 +23,8 @@ body {
 	color: #fff;
 	margin: 0;
 	font-family: Inter custom;
+
+	word-wrap: break-word;
 	
 	-webkit-font-smoothing: antialiased;
 	font-feature-settings: 'ss01' on,'ss02' on,'cv01' on,'cv03' on;

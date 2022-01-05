@@ -1,4 +1,5 @@
 <script>
+	import { Button } from './components'
 
 	let connected = false;
 
@@ -40,7 +41,7 @@
 			</div>
 			{:else}
 			<div class='connect-wallet'>
-				<button class='connect-btn'>Connect Wallet</button>
+				<Button>Connect Wallet</Button>
 			</div>
 			{/if}
 
@@ -55,7 +56,8 @@
 <style>
 
 	.content {
-		max-width: 850px;
+		padding-top: 30px;
+		max-width: 800px;
 		margin: auto;
 	}
 
@@ -100,24 +102,6 @@
 		border-radius: 12px;
 		padding: 10px 15px;
 		margin-left: 10px;
-	}
-
-	.connect-btn {
-		background-color: var(--orange);
-		color: white;
-		border-radius: 12px;
-		width: fit-content;
-		padding: 10px 15px;
-		font-size: 1rem;
-		font-family: inherit;
-		font-weight: 600;
-		border: none;
-		transition: 0.1s;
-	}
-
-	.connect-btn:hover {
-		background-color: var(--light-orange);
-		cursor: pointer;
 	}
 
 </style>
