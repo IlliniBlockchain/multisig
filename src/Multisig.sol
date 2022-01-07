@@ -108,6 +108,16 @@ contract Multisig {
         // sign tx
         // log event
         // sendTx if enough sigs
+        PendingTx storage pendingTx = pending[pendingHash];
+        require(pendingTx.nSigned > 0, 'Transaction does not exist!');
+        if (!pendingTx.signers[msg.sender]) {
+            pendingTx.signers[msg.sender] = true;
+            pendingTx.nSigned += 1;
+        }
+        if (pending[pendingHash].nSigned >= pending[pendingHash].nNeeded) {
+            sendTx(pendingHash);
+            emit SignTx(pendingHash, msg.sender);
+        }
     }
 
     /// @notice Removes existing signature from a PendingTx
