@@ -161,7 +161,7 @@ contract MultisigTest is DSTest {
         assertEq(nSignedObs, 2, "incorrect nSignedObs");
 
         uint result = 0; // No assertEq for bools
-        if (multisig.getSigner(pendingHashObs, owner1)) {
+        if (multisig.getSigner(pendingHashObs, owner2)) {
             result = 1;
         }
         assertEq(result, 1, "signTx did not add signer");
