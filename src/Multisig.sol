@@ -15,6 +15,8 @@ contract Multisig {
     event AddOwner(address newOwner);
     event RemoveOwner(address owner);
 
+    function() external payable {}
+
     /// STRUCTS
     struct Transaction {
         address to;
