@@ -70,14 +70,18 @@ contract Multisig {
     /// @param newOwner Address of owner to add
     function addOwner(address newOwner) public onlyContract {
         // Add an owner
+        owners[newOwner] = true;
         // Log event
+        emit AddOwner(newOwner);
     }
 
     /// @notice Removes existing owner
     /// @param owner Address of existing owner to remove
     function removeOwner(address owner) public onlyContract {
         // Remove owner
+        delete owners[owner];
         // Log event
+        emit RemoveOwner(owner);
     }
 
     /// @notice AddOwner and removeOwner in one transaction
