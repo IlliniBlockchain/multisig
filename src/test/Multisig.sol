@@ -92,7 +92,7 @@ contract MultisigTest is DSTest {
         assertEq(result, 1, "Owners to remove are not currently owners");
 
         vm.startPrank(address(multisig));
-        // add an owner
+        // remove an owner
         multisig.removeOwner(owner1);
         result = 0;
         if (multisig.owners(owner1)) {
@@ -100,7 +100,7 @@ contract MultisigTest is DSTest {
         }
         assertEq(result, 0, "removed owner1 is still owner");
 
-        // add another
+        // remove another
         multisig.removeOwner(owner2);
         result = 0;
         if (multisig.owners(owner2)) {
