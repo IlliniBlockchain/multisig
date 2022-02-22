@@ -28,7 +28,7 @@ contract MultisigTest is DSTest {
 
     // test constructor
 
-        // test modifiers: onlyOwner, onlyContract
+    // test modifiers: onlyOwner, onlyContract
     function testOnlyOwner() public {
         address to = address(0x123);
         uint value = 1;
@@ -230,34 +230,6 @@ contract MultisigTest is DSTest {
         multisig.addOwner(newOwner);
     }
 
-    // test addOwner, removeOwner, changeOwner
-    function testAddOwnerWithFuzzing(address newOwner1, address newOwner2) public {
-        // make sure they aren't already owners
-        uint result = 0;
-        if (multisig.owners(newOwner1) || multisig.owners(newOwner2)) {
-            result = 1;
-        }
-        assertEq(result, 0, "newOwners already owners");
-
-        vm.startPrank(address(multisig));
-        // add an owner
-        multisig.addOwner(newOwner1);
-        result = 0;
-        if (multisig.owners(newOwner1)) {
-            result = 1;
-        }
-        assertEq(result, 1, "newOwner1 is not an owner");
-
-        // add another
-        multisig.addOwner(newOwner2);
-        result = 0;
-        if (multisig.owners(newOwner2)) {
-            result = 1;
-        }
-        assertEq(result, 1, "newOwner2 is not an owner");
-        vm.stopPrank();
-
-    }
 
     // test createTx, signTx, sendTx
     function testCreateTxWithFuzzing(address to, uint value, bytes memory data, uint nNeeded) public {
