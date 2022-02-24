@@ -13,10 +13,11 @@ contract MultisigTest is DSTest {
     address owner1 = 0xEBcFba9f74a34f7118D1D2C078fCff4719D6518D;
     address owner2 = 0x534347d1766E89dB52C440AF833f0384d861B13E;
     address[] public addrs = [owner1, owner2];
+    uint public nNeeded = 5;
     Multisig multisig;
 
     function setUp() public {
-        multisig = new Multisig(addrs);
+        multisig = new Multisig(addrs, nNeeded);
     }
 
     // all tests must start with "test"
@@ -48,6 +49,14 @@ contract MultisigTest is DSTest {
         multisig.addOwner(newOwner);
         vm.prank(address(multisig));
         multisig.addOwner(newOwner);
+    }
+
+    function testValidNumNeeded() public {
+        // TODO: test numNeeded modifier
+    }
+
+    function testChangeNumNeeded() public {
+        // TODO: test changeNumNeeded
     }
 
     // test addOwner, removeOwner, changeOwner

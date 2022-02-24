@@ -14,6 +14,7 @@ contract Multisig {
     event SendTx(bytes32 txHash);
     event AddOwner(address newOwner);
     event RemoveOwner(address owner);
+    event NumNeededChange(uint numNeeded);
 
     /// STRUCTS
     struct Transaction {
@@ -33,6 +34,8 @@ contract Multisig {
     mapping (address => bool) public owners;
     mapping (bytes32 => Transaction) public txs;
     mapping (bytes32 => PendingTx) public pending;
+    uint public nOwners;
+    uint public nNeeded;
 
     /// MODIFIERS
     /// Functions with this modifier can only be called by an owner
@@ -51,6 +54,14 @@ contract Multisig {
         _;
     }
 
+    // Functions with this modifier can only be called with a valid number
+    // of needed signatures with respect to the number of owners
+    modifier validNumNeeded(uint ownerCount, uint _nNeeded) {
+        require(_nNeeded <= ownerCount && _nNeeded != 0 && ownerCount != 0,
+            "invalid number of owners or required signers");
+        _;
+    }
+
     /// FUNCTIONS
 
     /// @notice Helper function to view PendingTx signers from test contract
@@ -60,10 +71,17 @@ contract Multisig {
 
     /// @notice Initialize multisig with initial owners
     /// @param initialOwners List of addresses of owners
-    constructor (address[] memory initialOwners) {
-        for (uint i = 0; i < initialOwners.length; i += 1) {
+    constructor (address[] memory initialOwners, initialNNeeded) {
+        nOwners = initialOwners.length;
+        for (uint i = 0; i < nOwners; i += 1) {
             owners[initialOwners[i]] = true;
         }
+        nNeeded = initialNNeeded;
+    }
+
+    function changeNumNeeded(uint _nNeeded) public onlyContract validRequirement(nOwners, nNeeded) {
+        nNeeded = _nNeeded;
+        emit NumNeededChange(nNeeded);
     }
 
     /// @notice Adds a new owner
@@ -99,7 +117,7 @@ contract Multisig {
     /// @param value Amount in wei (eth/1e18) to send
     /// @param data Transaction data
     /// @return pendingHash for the created tx
-    function createTx(address to, uint value, bytes memory data, uint nNeeded) public onlyOwner returns (bytes32) {
+    function createTx(address to, uint value, bytes memory data) public onlyOwner returns (bytes32) {
 
         // create Transaction
         bytes32 txHash = keccak256(abi.encodePacked(to, value, data));
