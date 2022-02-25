@@ -5,10 +5,15 @@ pragma solidity 0.8.11;
 /// @author Illini Blockchain
 /// @notice A simple implementation of a multisig wallet
 contract Multisig {
-
     /// EVENTS
     /// Use events to log data about interaction with the multisig - consumable by clients
-    event CreateTx(address to, uint value, bytes data, bytes32 txHash, bytes32 pendingHash);
+    event CreateTx(
+        address to,
+        uint256 value,
+        bytes data,
+        bytes32 txHash,
+        bytes32 pendingHash
+    );
     event SignTx(bytes32 pendingHash, address signer);
     event UnsignTx(bytes32 pendingHash, address signer);
     event SendTx(bytes32 txHash);
@@ -18,25 +23,25 @@ contract Multisig {
     /// STRUCTS
     struct Transaction {
         address to;
-        uint value;
+        uint256 value;
         bytes data;
     }
 
     struct PendingTx {
         bytes32 txHash;
-        uint nNeeded;
-        uint nSigned;
-        mapping (address => bool) signers;
+        uint256 nNeeded;
+        uint256 nSigned;
+        mapping(address => bool) signers;
     }
 
     /// CONTRACT STATE
-    mapping (address => bool) public owners;
-    mapping (bytes32 => Transaction) public txs;
-    mapping (bytes32 => PendingTx) public pending;
+    mapping(address => bool) public owners;
+    mapping(bytes32 => Transaction) public txs;
+    mapping(bytes32 => PendingTx) public pending;
 
     /// MODIFIERS
     /// Functions with this modifier can only be called by an owner
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(owners[msg.sender], "msg.sender is not an owner");
         _;
     }
@@ -46,7 +51,7 @@ contract Multisig {
         and use this modifier to allow us to use our built-in multisig
         functionality to extend to these functions.
      */
-    modifier onlyContract {
+    modifier onlyContract() {
         require(msg.sender == address(this), "msg.sender is not this contract");
         _;
     }
@@ -54,14 +59,18 @@ contract Multisig {
     /// FUNCTIONS
 
     /// @notice Helper function to view PendingTx signers from test contract
-    function getSigner(bytes32 pendingHash, address signer) external view returns (bool) {
+    function getSigner(bytes32 pendingHash, address signer)
+        external
+        view
+        returns (bool)
+    {
         return pending[pendingHash].signers[signer];
     }
 
     /// @notice Initialize multisig with initial owners
     /// @param initialOwners List of addresses of owners
-    constructor (address[] memory initialOwners) {
-        for (uint i = 0; i < initialOwners.length; i += 1) {
+    constructor(address[] memory initialOwners) {
+        for (uint256 i = 0; i < initialOwners.length; i += 1) {
             owners[initialOwners[i]] = true;
         }
     }
@@ -83,7 +92,10 @@ contract Multisig {
     /// @notice AddOwner and removeOwner in one transaction
     /// @param currOwner Address of owner to remove
     /// @param newOwner Address of owner to add
-    function changeOwner(address currOwner, address newOwner) public onlyContract {
+    function changeOwner(address currOwner, address newOwner)
+        public
+        onlyContract
+    {
         removeOwner(currOwner);
         addOwner(newOwner);
     }
@@ -95,14 +107,20 @@ contract Multisig {
     /// @param value Amount in wei (eth/1e18) to send
     /// @param data Transaction data
     /// @return pendingHash for the created tx
-    function createTx(address to, uint value, bytes memory data, uint nNeeded) public onlyOwner returns (bytes32) {
-
+    function createTx(
+        address to,
+        uint256 value,
+        bytes memory data,
+        uint256 nNeeded
+    ) public onlyOwner returns (bytes32) {
         // create Transaction
         bytes32 txHash = keccak256(abi.encodePacked(to, value, data));
-        txs[txHash] = Transaction({ to: to, value: value, data: data });
+        txs[txHash] = Transaction({to: to, value: value, data: data});
 
         // create PendingTx
-        bytes32 pendingHash = keccak256(abi.encodePacked(txHash, nNeeded, block.number));
+        bytes32 pendingHash = keccak256(
+            abi.encodePacked(txHash, nNeeded, block.number)
+        );
         PendingTx storage pendingTx = pending[pendingHash];
         pendingTx.txHash = txHash;
         pendingTx.nNeeded = nNeeded;
@@ -119,13 +137,13 @@ contract Multisig {
     }
 
     /// @notice Signs off on a transaction and execute it if enough signatures
-    /// @param pendingHash Hash that maps to the PendingTx to unsign 
+    /// @param pendingHash Hash that maps to the PendingTx to unsign
     function signTx(bytes32 pendingHash) public onlyOwner {
         // sign tx
         // log event
         // sendTx if enough sigs
         PendingTx storage pendingTx = pending[pendingHash];
-        require(pendingTx.nSigned > 0, 'Transaction does not exist!');
+        require(pendingTx.nSigned > 0, "Transaction does not exist!");
         if (!pendingTx.signers[msg.sender]) {
             pendingTx.signers[msg.sender] = true;
             pendingTx.nSigned += 1;
@@ -151,5 +169,4 @@ contract Multisig {
         // call transaction
         // log event
     }
-
 }

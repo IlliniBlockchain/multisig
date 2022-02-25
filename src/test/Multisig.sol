@@ -5,10 +5,9 @@ import "ds-test/test.sol";
 import "./Vm.sol"; // foundry cheat codes
 import "./console.sol"; // hardhat console.log - run forge test --verbosity 3
 
-import 'src/Multisig.sol';
+import "src/Multisig.sol";
 
 contract MultisigTest is DSTest {
-
     Vm vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     address owner1 = 0xEBcFba9f74a34f7118D1D2C078fCff4719D6518D;
     address owner2 = 0x534347d1766E89dB52C440AF833f0384d861B13E;
@@ -31,9 +30,9 @@ contract MultisigTest is DSTest {
     // test modifiers: onlyOwner, onlyContract
     function testOnlyOwner() public {
         address to = address(0x123);
-        uint value = 1;
+        uint256 value = 1;
         bytes memory data;
-        uint nNeeded = 2;
+        uint256 nNeeded = 2;
         vm.expectRevert("msg.sender is not an owner");
         multisig.createTx(to, value, data, nNeeded);
         vm.prank(owner1);
@@ -41,7 +40,7 @@ contract MultisigTest is DSTest {
         vm.prank(owner2);
         multisig.createTx(to, value, data, nNeeded);
     }
-    
+
     function testOnlyContract() public {
         address newOwner = address(0x123);
         vm.expectRevert("msg.sender is not this contract");
@@ -56,7 +55,7 @@ contract MultisigTest is DSTest {
         address newOwner2 = address(0x456);
 
         // make sure they aren't already owners
-        uint result = 0;
+        uint256 result = 0;
         if (multisig.owners(newOwner1) || multisig.owners(newOwner2)) {
             result = 1;
         }
@@ -79,13 +78,11 @@ contract MultisigTest is DSTest {
         }
         assertEq(result, 1, "newOwner2 is not an owner");
         vm.stopPrank();
-
     }
 
     function testRemoveOwner() public {
-
         // make sure they are already owners
-        uint result = 0;
+        uint256 result = 0;
         if (multisig.owners(owner1) || multisig.owners(owner2)) {
             result = 1;
         }
@@ -108,31 +105,32 @@ contract MultisigTest is DSTest {
         }
         assertEq(result, 0, "removed owner2 is still owner");
         vm.stopPrank();
-
     }
 
     // test createTx, signTx, sendTx
     function testCreateTx() public {
         address to = address(0x123);
-        uint value = 1;
+        uint256 value = 1;
         bytes memory data = abi.encode("asdf");
-        uint nNeeded = 2;
+        uint256 nNeeded = 2;
 
         bytes32 txHash = keccak256(abi.encodePacked(to, value, data));
-        bytes32 pendingHash = keccak256(abi.encodePacked(txHash, nNeeded, block.number));
+        bytes32 pendingHash = keccak256(
+            abi.encodePacked(txHash, nNeeded, block.number)
+        );
 
         vm.prank(owner1);
         bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
         assertEq(pendingHashObs, pendingHash, "incorrect pendingHash");
 
         bytes32 txHashObs;
-        uint nNeededObs;
-        uint nSignedObs;
+        uint256 nNeededObs;
+        uint256 nSignedObs;
         (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHash);
         assertEq(txHashObs, txHash, "incorrect txHash");
         assertEq(nNeededObs, nNeeded, "incorrect nNeeded");
         assertEq(nSignedObs, 1, "nSignedObs != 1");
-        uint result = 0; // No assertEq for bools
+        uint256 result = 0; // No assertEq for bools
         if (multisig.getSigner(pendingHashObs, owner1)) {
             result = 1;
         }
@@ -142,9 +140,9 @@ contract MultisigTest is DSTest {
     function testSignTx() public {
         // createTx
         address to = address(0x123);
-        uint value = 1;
+        uint256 value = 1;
         bytes memory data = abi.encode("asdf");
-        uint nNeeded = 3;
+        uint256 nNeeded = 3;
 
         vm.prank(owner1);
         bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
@@ -152,15 +150,15 @@ contract MultisigTest is DSTest {
         // try sign with another owner
         vm.prank(owner2);
         multisig.signTx(pendingHashObs);
-        
+
         // check pending hash signers, nSigned
         bytes32 txHashObs;
-        uint nNeededObs;
-        uint nSignedObs;
+        uint256 nNeededObs;
+        uint256 nSignedObs;
         (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHashObs);
         assertEq(nSignedObs, 2, "incorrect nSignedObs");
 
-        uint result = 0; // No assertEq for bools
+        uint256 result = 0; // No assertEq for bools
         if (multisig.getSigner(pendingHashObs, owner2)) {
             result = 1;
         }
@@ -176,10 +174,10 @@ contract MultisigTest is DSTest {
     function testSignAndSendTx() public {
         // sending eth
         address to = owner1;
-        uint value = 30;
+        uint256 value = 30;
         bytes memory data = abi.encode("");
-        uint nNeeded = 2;
-        uint initialBalance = to.balance;
+        uint256 nNeeded = 2;
+        uint256 initialBalance = to.balance;
 
         vm.prank(owner1);
         bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
@@ -189,11 +187,15 @@ contract MultisigTest is DSTest {
         multisig.signTx(pendingHashObs);
 
         // check sent (immediately)
-        assertEq(to.balance, initialBalance + value, "multisig tx failed to send ether");
+        assertEq(
+            to.balance,
+            initialBalance + value,
+            "multisig tx failed to send ether"
+        );
 
         // function call
-        uint i = 1;
-        uint j = 2;
+        uint256 i = 1;
+        uint256 j = 2;
         TestContract testContract = new TestContract(i);
         to = address(testContract);
         value = 0;
@@ -208,21 +210,22 @@ contract MultisigTest is DSTest {
         multisig.signTx(pendingHashObs);
 
         // check sent (immediately)
-        assertEq(testContract.i(), i + j, "multisig tx failed to call contract");
-        
+        assertEq(
+            testContract.i(),
+            i + j,
+            "multisig tx failed to call contract"
+        );
     }
-
 }
 
 contract TestContract {
-    uint public i;
+    uint256 public i;
 
-    constructor(uint _i) {
+    constructor(uint256 _i) {
         i = _i;
     }
 
-    function callMe(uint j) public {
+    function callMe(uint256 j) public {
         i += j;
     }
-
 }
