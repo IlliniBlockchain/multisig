@@ -1,10 +1,7 @@
 <script>
 	import { Router, Route } from 'svelte-routing';
-	import { Home } from './pages'
+	import { Home, CreateTx, TxInfo, SendMoney } from './pages'
 	import Layout from './Layout.svelte'
-import CreateTx from './pages/CreateTx.svelte';
-import SendMoney from './pages/SendMoney.svelte';
-import TxInfo from './pages/TxInfo.svelte';
 
 	export let url = '';
 </script>

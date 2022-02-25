@@ -2,6 +2,7 @@
 	import { Link } from 'svelte-routing'
 	import { Button } from '../components'
 
+	// Dummy data
 	export let pendingHash = '0xg95bfasdfasdfasdf'
 	export let name = 'Test name'
     export let executed = false

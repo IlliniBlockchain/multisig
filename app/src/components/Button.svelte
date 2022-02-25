@@ -2,7 +2,7 @@
 	export let blue;
 </script>
 
-<button class={['btn', blue && 'blue'].join(' ')}>
+<button class={['btn', blue && 'blue'].join(' ')} on:click>
     <slot/>
 </button>
 

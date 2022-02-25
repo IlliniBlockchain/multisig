@@ -1,4 +1,5 @@
 <script>
+	import { onMount } from 'svelte';
 	import { Button } from './components'
 
 	let connected = false;
@@ -6,6 +7,14 @@
 	let network = 'Ethereum';
 	let ethBalance = 0;
 	let walletAddr = '0x';
+
+	onMount(() => {
+		console.log('This code happens when this component is rendered.');
+	})
+
+	const connectWallet = () => {
+		alert('clicked connect wallet');
+	}
 
 </script>
 
@@ -41,7 +50,7 @@
 			</div>
 			{:else}
 			<div class='connect-wallet'>
-				<Button>Connect Wallet</Button>
+				<Button on:click={connectWallet}>Connect Wallet</Button>
 			</div>
 			{/if}
 
