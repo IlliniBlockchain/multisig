@@ -180,6 +180,9 @@ contract MultisigTest is DSTest {
         bytes memory data = abi.encode("");
         uint nNeeded = 2;
 
+        // set multisig to have some ether in it
+        vm.deal(address(multisig), 50000);
+
         vm.prank(owner1);
         bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
         uint initialBalance = to.balance;
@@ -189,7 +192,7 @@ contract MultisigTest is DSTest {
         multisig.signTx(pendingHashObs);
 
         // check sent (immediately)
-        // assertEq(to.balance, initialBalance + value, "multisig tx failed to send ether");
+        assertEq(to.balance, initialBalance + value, "multisig tx failed to send ether");
 
         // function call
         uint i = 1;

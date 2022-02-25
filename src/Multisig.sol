@@ -149,10 +149,10 @@ contract Multisig {
     function sendTx(bytes32 pendingHash) private {
         // get transaction data from txHash map
         PendingTx storage pendingTx = pending[pendingHash];
-        Transaction storage tx = txs[pendingTx.txHash];
+        Transaction storage txn = txs[pendingTx.txHash];
         
         // call transaction
-        (bool sent, bytes memory data) = tx.to.call{value: tx.value}(tx.data);
+        (bool sent, bytes memory data) = txn.to.call{value: txn.value}(txn.data);
 
         require(sent, "Failed to send transaction");
         
