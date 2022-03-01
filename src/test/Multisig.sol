@@ -12,10 +12,11 @@ contract MultisigTest is DSTest {
     address owner1 = 0xEBcFba9f74a34f7118D1D2C078fCff4719D6518D;
     address owner2 = 0x534347d1766E89dB52C440AF833f0384d861B13E;
     address[] public addrs = [owner1, owner2];
+    uint256 nNeeded = 2;
     Multisig multisig;
 
     function setUp() public {
-        multisig = new Multisig(addrs);
+        multisig = new Multisig(addrs, nNeeded);
     }
 
     // all tests must start with "test"
@@ -26,19 +27,27 @@ contract MultisigTest is DSTest {
     }
 
     // test constructor
+    function testConstructor() public {
+        uint256 hasOwner;
+        for (uint256 i = 0; i < addrs.length; i++) {
+            hasOwner = multisig.owners(addrs[i]) ? 1 : 0;
+            assertEq(hasOwner, 1);
+        }
+        assertEq(multisig.nOwners, addrs.length);
+        assertEq(multisig.nNeeded, nNeeded);
+    }
 
-    // test modifiers: onlyOwner, onlyContract
+    // test modifiers: onlyOwner, onlyContract, validNumNeeded
     function testOnlyOwner() public {
         address to = address(0x123);
         uint256 value = 1;
         bytes memory data;
-        uint256 nNeeded = 2;
         vm.expectRevert("msg.sender is not an owner");
-        multisig.createTx(to, value, data, nNeeded);
+        multisig.createTx(to, value, data);
         vm.prank(owner1);
-        multisig.createTx(to, value, data, nNeeded);
+        multisig.createTx(to, value, data);
         vm.prank(owner2);
-        multisig.createTx(to, value, data, nNeeded);
+        multisig.createTx(to, value, data);
     }
 
     function testOnlyContract() public {
@@ -47,6 +56,31 @@ contract MultisigTest is DSTest {
         multisig.addOwner(newOwner);
         vm.prank(address(multisig));
         multisig.addOwner(newOwner);
+    }
+
+    function testValidNumNeeded() public {
+        address newOwner = address(0x123);
+        // nOwners and nNeeded are currently 2
+        vm.startPrank(address(multisig));
+        vm.expectRevert("invalid number of owners or needed signers");
+        multisig.removeOwner(newOwner);
+
+        multisig.addOwner(newOwner);
+        multisig.removeOwner(newOwner);
+    }
+
+    // test changeNumNeeded
+    function testChangeNumNeeded() public {
+        vm.startPrank(address(multisig));
+
+        // Change to 3
+        uint256 newN = 3;
+        multisig.changeNumNeeded(newN);
+        assertEq(multisig.nNeeded, newN);
+
+        // Change back
+        multisig.changeNumNeeded(nNeeded);
+        assertEq(multisig.nNeeded, nNeeded);
     }
 
     // test addOwner, removeOwner, changeOwner
@@ -112,23 +146,18 @@ contract MultisigTest is DSTest {
         address to = address(0x123);
         uint256 value = 1;
         bytes memory data = abi.encode("asdf");
-        uint256 nNeeded = 2;
 
         bytes32 txHash = keccak256(abi.encodePacked(to, value, data));
-        bytes32 pendingHash = keccak256(
-            abi.encodePacked(txHash, nNeeded, block.number)
-        );
+        bytes32 pendingHash = keccak256(abi.encodePacked(txHash, block.number));
 
         vm.prank(owner1);
-        bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data);
         assertEq(pendingHashObs, pendingHash, "incorrect pendingHash");
 
         bytes32 txHashObs;
-        uint256 nNeededObs;
         uint256 nSignedObs;
-        (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHash);
+        (txHashObs, nSignedObs) = multisig.pending(pendingHash);
         assertEq(txHashObs, txHash, "incorrect txHash");
-        assertEq(nNeededObs, nNeeded, "incorrect nNeeded");
         assertEq(nSignedObs, 1, "nSignedObs != 1");
         uint256 result = 0; // No assertEq for bools
         if (multisig.getSigner(pendingHashObs, owner1)) {
@@ -142,10 +171,9 @@ contract MultisigTest is DSTest {
         address to = address(0x123);
         uint256 value = 1;
         bytes memory data = abi.encode("asdf");
-        uint256 nNeeded = 3;
 
         vm.prank(owner1);
-        bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data);
 
         // try sign with another owner
         vm.prank(owner2);
@@ -153,9 +181,8 @@ contract MultisigTest is DSTest {
 
         // check pending hash signers, nSigned
         bytes32 txHashObs;
-        uint256 nNeededObs;
         uint256 nSignedObs;
-        (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHashObs);
+        (txHashObs, nSignedObs) = multisig.pending(pendingHashObs);
         assertEq(nSignedObs, 2, "incorrect nSignedObs");
 
         uint256 result = 0; // No assertEq for bools
@@ -167,7 +194,7 @@ contract MultisigTest is DSTest {
         // sign with already signed owner, check nSigned
         vm.prank(owner2);
         multisig.signTx(pendingHashObs);
-        (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHashObs);
+        (txHashObs, nSignedObs) = multisig.pending(pendingHashObs);
         assertEq(nSignedObs, 2, "incorrect nSignedObs");
     }
 
@@ -176,11 +203,10 @@ contract MultisigTest is DSTest {
         address to = owner1;
         uint256 value = 30;
         bytes memory data = abi.encode("");
-        uint256 nNeeded = 2;
         uint256 initialBalance = to.balance;
 
         vm.prank(owner1);
-        bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data);
 
         // sign
         vm.prank(owner2);
@@ -200,10 +226,9 @@ contract MultisigTest is DSTest {
         to = address(testContract);
         value = 0;
         data = abi.encodeWithSignature("callMe(uint256)", j);
-        nNeeded = 2;
 
         vm.prank(owner1);
-        pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+        pendingHashObs = multisig.createTx(to, value, data);
 
         // sign
         vm.prank(owner2);
