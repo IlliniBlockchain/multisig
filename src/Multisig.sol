@@ -19,6 +19,7 @@ contract Multisig {
     event SendTx(bytes32 txHash);
     event AddOwner(address newOwner);
     event RemoveOwner(address owner);
+    event NumNeededChange(uint256 numNeeded);
 
     /// STRUCTS
     struct Transaction {
@@ -29,7 +30,6 @@ contract Multisig {
 
     struct PendingTx {
         bytes32 txHash;
-        uint256 nNeeded;
         uint256 nSigned;
         mapping(address => bool) signers;
     }
@@ -38,6 +38,8 @@ contract Multisig {
     mapping(address => bool) public owners;
     mapping(bytes32 => Transaction) public txs;
     mapping(bytes32 => PendingTx) public pending;
+    uint256 public nOwners;
+    uint256 public nNeeded;
 
     /// MODIFIERS
     /// Functions with this modifier can only be called by an owner
@@ -56,6 +58,16 @@ contract Multisig {
         _;
     }
 
+    // Functions with this modifier can only be called with a valid number
+    // of needed signatures with respect to the number of owners
+    modifier validNumNeeded(uint256 ownerCount, uint256 _nNeeded) {
+        require(
+            _nNeeded <= ownerCount && _nNeeded != 0 && ownerCount != 0,
+            "invalid number of owners or needed signers"
+        );
+        _;
+    }
+
     /// FUNCTIONS
 
     /// @notice Helper function to view PendingTx signers from test contract
@@ -69,10 +81,23 @@ contract Multisig {
 
     /// @notice Initialize multisig with initial owners
     /// @param initialOwners List of addresses of owners
-    constructor(address[] memory initialOwners) {
-        for (uint256 i = 0; i < initialOwners.length; i += 1) {
+    /// @param _nNeeded Number of owners needed to sign
+    constructor(address[] memory initialOwners, uint256 _nNeeded)
+        validNumNeeded(initialOwners.length, _nNeeded)
+    {
+        nOwners = initialOwners.length;
+        for (uint256 i = 0; i < nOwners; i += 1) {
             owners[initialOwners[i]] = true;
         }
+        nNeeded = _nNeeded;
+    }
+
+    function changeNumNeeded(uint256 _nNeeded)
+        public
+        validNumNeeded(nOwners, _nNeeded)
+    {
+        nNeeded = _nNeeded;
+        emit NumNeededChange(nNeeded);
     }
 
     /// @notice Adds a new owner
@@ -84,7 +109,11 @@ contract Multisig {
 
     /// @notice Removes existing owner
     /// @param owner Address of existing owner to remove
-    function removeOwner(address owner) public onlyContract {
+    function removeOwner(address owner)
+        public
+        onlyContract
+        validNumNeeded(nOwners - 1, nNeeded)
+    {
         // Remove owner
         // Log event
     }
@@ -96,6 +125,8 @@ contract Multisig {
         public
         onlyContract
     {
+        // TODO: This checks that nNeeded is valid which doesn't
+        // make sense for just replacing an Owner.
         removeOwner(currOwner);
         addOwner(newOwner);
     }
@@ -110,20 +141,16 @@ contract Multisig {
     function createTx(
         address to,
         uint256 value,
-        bytes memory data,
-        uint256 nNeeded
+        bytes memory data
     ) public onlyOwner returns (bytes32) {
         // create Transaction
         bytes32 txHash = keccak256(abi.encodePacked(to, value, data));
         txs[txHash] = Transaction({to: to, value: value, data: data});
 
         // create PendingTx
-        bytes32 pendingHash = keccak256(
-            abi.encodePacked(txHash, nNeeded, block.number)
-        );
+        bytes32 pendingHash = keccak256(abi.encodePacked(txHash, block.number));
         PendingTx storage pendingTx = pending[pendingHash];
         pendingTx.txHash = txHash;
-        pendingTx.nNeeded = nNeeded;
         pendingTx.nSigned = 0;
 
         // log event
@@ -148,7 +175,7 @@ contract Multisig {
             pendingTx.signers[msg.sender] = true;
             pendingTx.nSigned += 1;
         }
-        if (pending[pendingHash].nSigned >= pending[pendingHash].nNeeded) {
+        if (pending[pendingHash].nSigned >= nNeeded) {
             sendTx(pendingHash);
             emit SignTx(pendingHash, msg.sender);
         }
