@@ -103,8 +103,12 @@ contract Multisig {
     /// @notice Adds a new owner
     /// @param newOwner Address of owner to add
     function addOwner(address newOwner) public onlyContract {
+        require(!owners[newOwner], "specified address is already an owner");
         // Add an owner
+        owners[newOwner] = true;
+        nOwners += 1;
         // Log event
+        emit AddOwner(newOwner);
     }
 
     /// @notice Removes existing owner
@@ -114,8 +118,12 @@ contract Multisig {
         onlyContract
         validNumNeeded(nOwners - 1, nNeeded)
     {
+        require(owners[owner], "specified address is not an owner");
         // Remove owner
+        delete owners[owner];
+        nOwners -= 1;
         // Log event
+        emit RemoveOwner(owner);
     }
 
     /// @notice AddOwner and removeOwner in one transaction
@@ -195,12 +203,14 @@ contract Multisig {
         // get transaction data from txHash map
         PendingTx storage pendingTx = pending[pendingHash];
         Transaction storage txn = txs[pendingTx.txHash];
-        
+
         // call transaction
-        (bool sent, bytes memory data) = txn.to.call{value: txn.value}(txn.data);
+        (bool sent, bytes memory data) = txn.to.call{value: txn.value}(
+            txn.data
+        );
 
         require(sent, "Failed to send transaction");
-        
+
         // log event
         emit SendTx(pendingHash);
     }
