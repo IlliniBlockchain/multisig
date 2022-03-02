@@ -33,8 +33,8 @@ contract MultisigTest is DSTest {
             hasOwner = multisig.owners(addrs[i]) ? 1 : 0;
             assertEq(hasOwner, 1);
         }
-        assertEq(multisig.nOwners, addrs.length);
-        assertEq(multisig.nNeeded, nNeeded);
+        assertEq(multisig.nOwners(), addrs.length);
+        assertEq(multisig.nNeeded(), nNeeded);
     }
 
     // test modifiers: onlyOwner, onlyContract, validNumNeeded
@@ -53,6 +53,7 @@ contract MultisigTest is DSTest {
     function testOnlyContract() public {
         address newOwner = address(0x123);
         vm.expectRevert("msg.sender is not this contract");
+        vm.prank(owner1);
         multisig.addOwner(newOwner);
         vm.prank(address(multisig));
         multisig.addOwner(newOwner);
@@ -73,14 +74,20 @@ contract MultisigTest is DSTest {
     function testChangeNumNeeded() public {
         vm.startPrank(address(multisig));
 
+        multisig.addOwner(address(0x123));
+
         // Change to 3
         uint256 newN = 3;
         multisig.changeNumNeeded(newN);
-        assertEq(multisig.nNeeded, newN);
+        assertEq(multisig.nNeeded(), newN);
+
+        // Change to 4 (> nOwners)
+        vm.expectRevert("invalid number of owners or needed signers");
+        multisig.changeNumNeeded(4);
 
         // Change back
         multisig.changeNumNeeded(nNeeded);
-        assertEq(multisig.nNeeded, nNeeded);
+        assertEq(multisig.nNeeded(), nNeeded);
     }
 
     // test addOwner, removeOwner, changeOwner
@@ -104,6 +111,10 @@ contract MultisigTest is DSTest {
         }
         assertEq(result, 1, "newOwner1 is not an owner");
 
+        // Check that the owner cannot be added again
+        vm.expectRevert("specified address is already an owner");
+        multisig.addOwner(newOwner1);
+
         // add another
         multisig.addOwner(newOwner2);
         result = 0;
@@ -123,6 +134,13 @@ contract MultisigTest is DSTest {
         assertEq(result, 1, "Owners to remove are not currently owners");
 
         vm.startPrank(address(multisig));
+        vm.expectRevert("invalid number of owners or needed signers");
+        multisig.removeOwner(owner1);
+
+        // Add owners to satisfy nNeeded
+        multisig.addOwner(address(0x123));
+        multisig.addOwner(address(0x456));
+
         // remove an owner
         multisig.removeOwner(owner1);
         result = 0;
@@ -130,6 +148,10 @@ contract MultisigTest is DSTest {
             result = 1;
         }
         assertEq(result, 0, "removed owner1 is still owner");
+
+        // Check that the owner cannot be removed again
+        vm.expectRevert("specified address is not an owner");
+        multisig.removeOwner(owner1);
 
         // remove another
         multisig.removeOwner(owner2);
