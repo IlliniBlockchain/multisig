@@ -179,10 +179,13 @@ contract MultisigTest is DSTest {
         uint value = 30;
         bytes memory data = abi.encode("");
         uint nNeeded = 2;
-        uint initialBalance = to.balance;
+
+        // set multisig to have some ether in it
+        vm.deal(address(multisig), 50000);
 
         vm.prank(owner1);
         bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+        uint initialBalance = to.balance;
 
         // sign
         vm.prank(owner2);
