@@ -225,6 +225,143 @@ contract MultisigTest is DSTest {
         address to = owner1;
         uint256 value = 30;
         bytes memory data = abi.encode("");
+        uint256 nNeeded = 2;
+
+        // set multisig to have some ether in it
+        vm.deal(address(multisig), 50000);
+
+        vm.prank(owner1);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+        uint256 initialBalance = to.balance;
+
+        // sign
+        vm.prank(owner2);
+        multisig.signTx(pendingHashObs);
+
+        // check sent (immediately)
+        assertEq(
+            to.balance,
+            initialBalance + value,
+            "multisig tx failed to send ether"
+        );
+
+        // function call
+        uint256 i = 1;
+        uint256 j = 2;
+        TestContract testContract = new TestContract(i);
+        to = address(testContract);
+        value = 0;
+        data = abi.encodeWithSignature("callMe(uint256)", j);
+        nNeeded = 2;
+
+        vm.prank(owner1);
+        pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+
+        // sign
+        vm.prank(owner2);
+        multisig.signTx(pendingHashObs);
+
+        // check sent (immediately)
+        assertEq(
+            testContract.i(),
+            i + j,
+            "multisig tx failed to call contract"
+        );
+    }
+
+    // FUZZING TESTS
+    // test modifiers: onlyOwner, onlyContract
+    function testOnlyOwnerWithFuzzing(
+        address to,
+        uint256 value,
+        bytes memory data,
+        uint256 nNeeded
+    ) public {
+        vm.expectRevert("msg.sender is not an owner");
+        multisig.createTx(to, value, data, nNeeded);
+        vm.prank(owner1);
+        multisig.createTx(to, value, data, nNeeded);
+        vm.prank(owner2);
+        multisig.createTx(to, value, data, nNeeded);
+    }
+
+    function testOnlyContractWithFuzzing(address newOwner) public {
+        vm.expectRevert("msg.sender is not this contract");
+        multisig.addOwner(newOwner);
+        vm.prank(address(multisig));
+        multisig.addOwner(newOwner);
+    }
+
+    // test createTx, signTx, sendTx
+    function testCreateTxWithFuzzing(
+        address to,
+        uint256 value,
+        bytes memory data,
+        uint256 nNeeded
+    ) public {
+        bytes32 txHash = keccak256(abi.encodePacked(to, value, data));
+        bytes32 pendingHash = keccak256(
+            abi.encodePacked(txHash, nNeeded, block.number)
+        );
+
+        vm.prank(owner1);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+        assertEq(pendingHashObs, pendingHash, "incorrect pendingHash");
+
+        bytes32 txHashObs;
+        uint256 nNeededObs;
+        uint256 nSignedObs;
+        (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHash);
+        assertEq(txHashObs, txHash, "incorrect txHash");
+        assertEq(nNeededObs, nNeeded, "incorrect nNeeded");
+        assertEq(nSignedObs, 1, "nSignedObs != 1");
+        uint256 result = 0; // No assertEq for bools
+        if (multisig.getSigner(pendingHashObs, owner1)) {
+            result = 1;
+        }
+        assertEq(result, 1, "createTx did not add signer");
+    }
+
+    function testSignTxWithFuzzing(
+        address to,
+        uint256 value,
+        bytes memory data,
+        uint256 nNeeded
+    ) public {
+        vm.prank(owner1);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data, nNeeded);
+
+        // try sign with another owner
+        vm.prank(owner2);
+        multisig.signTx(pendingHashObs);
+
+        // check pending hash signers, nSigned
+        bytes32 txHashObs;
+        uint256 nNeededObs;
+        uint256 nSignedObs;
+        (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHashObs);
+        assertEq(nSignedObs, 2, "incorrect nSignedObs");
+
+        uint256 result = 0; // No assertEq for bools
+        if (multisig.getSigner(pendingHashObs, owner1)) {
+            result = 1;
+        }
+        assertEq(result, 1, "signTx did not add signer");
+
+        // sign with already signed owner, check nSigned
+        vm.prank(owner2);
+        multisig.signTx(pendingHashObs);
+        (txHashObs, nNeededObs, nSignedObs) = multisig.pending(pendingHashObs);
+        assertEq(nSignedObs, 2, "incorrect nSignedObs");
+    }
+
+    function testSignAndSendTxWithFuzzing(
+        address to,
+        uint256 value,
+        bytes memory data,
+        uint256 nNeeded
+    ) public {
+        // sending eth
         uint256 initialBalance = to.balance;
 
         vm.prank(owner1);
