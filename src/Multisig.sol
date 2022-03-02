@@ -16,7 +16,7 @@ contract Multisig {
     );
     event SignTx(bytes32 pendingHash, address signer);
     event UnsignTx(bytes32 pendingHash, address signer);
-    event SendTx(bytes32 txHash);
+    event SendTx(bytes32 pendingHash);
     event AddOwner(address newOwner);
     event RemoveOwner(address owner);
     event NumNeededChange(uint256 numNeeded);
@@ -190,10 +190,18 @@ contract Multisig {
     }
 
     /// @notice Wrapper to send transaction once approved
-    /// @param txHash Hash that maps to the Transaction
-    function sendTx(bytes32 txHash) private {
+    /// @param pendingHash Hash that maps to the Transaction
+    function sendTx(bytes32 pendingHash) private {
         // get transaction data from txHash map
+        PendingTx storage pendingTx = pending[pendingHash];
+        Transaction storage txn = txs[pendingTx.txHash];
+        
         // call transaction
+        (bool sent, bytes memory data) = txn.to.call{value: txn.value}(txn.data);
+
+        require(sent, "Failed to send transaction");
+        
         // log event
+        emit SendTx(pendingHash);
     }
 }
