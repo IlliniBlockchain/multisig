@@ -50,6 +50,19 @@ contract MultisigTest is DSTest {
         multisig.addOwner(newOwner);
     }
 
+    function testFallbackFunction() public {
+        address newOwner = address(0x123);
+        uint val = 99;
+
+        // give owner money
+        vm.deal(address(newOwner), 50000);
+        uint initialMultisigBalance = address(multisig).balance;
+
+        (bool sent, bytes memory data) = address(multisig).call{value: val}("");
+        
+        assertEq(address(multisig).balance, initialMultisigBalance + val, "multisig was not able to recieve payment");
+    }
+
     // test addOwner, removeOwner, changeOwner
     function testAddOwner() public {
         address newOwner1 = address(0x123);
