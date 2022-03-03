@@ -185,6 +185,7 @@ contract Multisig {
         if (pending[pendingHash].nSigned >= nNeeded) {
             sendTx(pendingHash);
             emit SignTx(pendingHash, msg.sender);
+            delete pending[pendingHash];
         }
     }
 
@@ -192,8 +193,16 @@ contract Multisig {
     /// @dev Check if they're signature exists to properly update nSigned
     /// @param pendingHash Hash that maps to the PendingTx to unsign
     function unsignTx(bytes32 pendingHash) public onlyOwner {
-        // remove signature from tx
-        // log event
+        PendingTx storage pendingTx = pending[pendingHash];
+        require(pendingTx.nSigned > 0, "Transaction does not exist!");
+        if (pendingTx.signers[msg.sender]) {
+            pendingTx.signers[msg.sender] = false;
+            pendingTx.nSigned -= 1;
+        }
+        emit UnsignTx(pendingHash, msg.sender);
+        if (pendingTx.nSigned == 0) {
+            delete pending[pendingHash];
+        }
     }
 
     /// @notice Wrapper to send transaction once approved
