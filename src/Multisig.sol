@@ -179,10 +179,9 @@ contract Multisig {
         // sendTx if enough sigs
         PendingTx storage pendingTx = pending[pendingHash];
         require(pendingTx.nSigned > 0, "Transaction does not exist!");
-        if (!pendingTx.signers[msg.sender]) {
-            pendingTx.signers[msg.sender] = true;
-            pendingTx.nSigned += 1;
-        }
+        require(!pendingTx.signers[msg.sender], "Already signed!");
+        pendingTx.signers[msg.sender] = true;
+        pendingTx.nSigned += 1;
         if (pending[pendingHash].nSigned >= nNeeded) {
             sendTx(pendingHash);
             emit SignTx(pendingHash, msg.sender);
