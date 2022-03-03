@@ -14,6 +14,11 @@ contract Multisig {
     event SendTx(bytes32 pendingHash);
     event AddOwner(address newOwner);
     event RemoveOwner(address owner);
+    event Fallback(address owner, uint256 amount, string message);
+
+    fallback() external payable {
+        emit Fallback(msg.sender, msg.value, "Fallback function was called");
+    }
 
     /// STRUCTS
     struct Transaction {
