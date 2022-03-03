@@ -51,13 +51,14 @@ contract MultisigTest is DSTest {
     }
 
     function testFallbackFunction() public {
-        address newOwner = address(0x123);
+        address addr = address(0x123);
         uint val = 99;
 
-        // give owner money
-        vm.deal(address(newOwner), 50000);
+        // give addr money
+        vm.deal(address(addr), 50000);
         uint initialMultisigBalance = address(multisig).balance;
 
+        vm.prank(address(addr));
         (bool sent, bytes memory data) = address(multisig).call{value: val}("");
         
         assertEq(address(multisig).balance, initialMultisigBalance + val, "multisig was not able to recieve payment");
