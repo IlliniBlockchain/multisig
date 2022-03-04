@@ -198,6 +198,8 @@ contract MultisigTest is DSTest {
         vm.deal(address(owner1), 50000);
         vm.deal(address(owner2), 50000);
 
+        /// Test that signTx removed pending tx after completion
+
         vm.prank(owner1);
         bytes32 pendingHashObs = multisig.createTx(to, value, data);
 
@@ -205,24 +207,93 @@ contract MultisigTest is DSTest {
         vm.prank(owner2);
         multisig.signTx(pendingHashObs);
 
-        // check pending hash signers, nSigned
+        // check that pending hash has been
+        // removed after all signers have signed.
         bytes32 txHashObs;
         uint256 nSignedObs;
         (txHashObs, nSignedObs) = multisig.pending(pendingHashObs);
-        assertEq(nSignedObs, 2, "incorrect nSignedObs");
+        assertEq(nSignedObs, 0, "pending tx should be deleted");
+
+        /// Test that signTx correctly adds signer
+        address newOwner = address(0x456);
+
+        // Change numNeeded so pending tx is not deleted after 2 signers.
+        vm.prank(address(multisig));
+        multisig.addOwner(newOwner);
+        vm.prank(address(multisig));
+        multisig.changeNumNeeded(3);
+
+        vm.prank(owner1);
+        // TODO: this is submitting the same tx as above, but once sent,
+        // the signers from the previous pending tx are not removed since
+        // the keys are not known. So adding owner2 will result in
+        // Already Signed error. See TODO comment in signTx.
+        pendingHashObs = multisig.createTx(to, value, data);
+
+        // try sign with another owner
+        // vm.prank(owner2); See above comment.
+        vm.prank(newOwner);
+        multisig.signTx(pendingHashObs);
+
+        // check that pending hash has corrent num signers
+        (txHashObs, nSignedObs) = multisig.pending(pendingHashObs);
+        assertEq(nSignedObs, 2, "incorrect num signers");
 
         uint256 result = 0; // No assertEq for bools
-        if (multisig.getSigner(pendingHashObs, owner2)) {
+        if (multisig.getSigner(pendingHashObs, newOwner)) {
             result = 1;
         }
         assertEq(result, 1, "signTx did not add signer");
 
         // sign with already signed owner, check nSigned
-        vm.prank(owner2);
+        vm.prank(owner1);
         vm.expectRevert("Already signed!");
         multisig.signTx(pendingHashObs);
         (txHashObs, nSignedObs) = multisig.pending(pendingHashObs);
         assertEq(nSignedObs, 2, "incorrect nSignedObs");
+    }
+
+    function testUnsignTx() public {
+        // createTx
+        address to = address(0x123);
+        uint256 value = 1;
+        bytes memory data = abi.encode("asdf");
+
+        vm.deal(address(multisig), 50000);
+        vm.deal(address(owner1), 50000);
+        vm.deal(address(owner2), 50000);
+
+        vm.prank(owner1);
+        bytes32 pendingHashObs = multisig.createTx(to, value, data);
+
+        // unsign after create tx should delete pending tx
+        vm.prank(owner1);
+        multisig.unsignTx(pendingHashObs);
+        bytes32 txHashObs;
+        uint256 nSignedObs;
+        (txHashObs, nSignedObs) = multisig.pending(pendingHashObs);
+        uint256 result = 0;
+        if (nSignedObs > 0) {
+            result = 1;
+        }
+        assertEq(result, 0, "pendingHashObs still exists");
+
+        vm.prank(owner1);
+        pendingHashObs = multisig.createTx(to, value, data);
+
+        // unsign with owner2
+        vm.prank(owner2);
+        multisig.unsignTx(pendingHashObs);
+
+        // check pending hash signers, nSigned
+        (txHashObs, nSignedObs) = multisig.pending(pendingHashObs);
+        assertEq(nSignedObs, 1, "incorrect nSignedObs");
+
+        result = 0; // No assertEq for bools
+        if (multisig.getSigner(pendingHashObs, owner2)) {
+            result = 1;
+        }
+        assertEq(result, 0, "unsignTx did not remove signer");
     }
 
     function testSignAndSendTx() public {
@@ -332,15 +403,14 @@ contract MultisigTest is DSTest {
         vm.prank(owner1);
         bytes32 pendingHashObs = multisig.createTx(to, value, data);
 
-        // try sign with another owner
-        vm.prank(owner2);
+        // sign with already signed owner, check nSigned
+        vm.prank(owner1);
+        vm.expectRevert("Already signed!");
         multisig.signTx(pendingHashObs);
-
-        // check pending hash signers, nSigned
         bytes32 txHashObs;
         uint256 nSignedObs;
         (txHashObs, nSignedObs) = multisig.pending(pendingHashObs);
-        assertEq(nSignedObs, 2, "incorrect nSignedObs");
+        assertEq(nSignedObs, 1, "incorrect nSignedObs");
 
         uint256 result = 0; // No assertEq for bools
         if (multisig.getSigner(pendingHashObs, owner1)) {
@@ -348,12 +418,14 @@ contract MultisigTest is DSTest {
         }
         assertEq(result, 1, "signTx did not add signer");
 
-        // sign with already signed owner, check nSigned
+        // try sign with another owner
         vm.prank(owner2);
-        vm.expectRevert("Already signed!");
         multisig.signTx(pendingHashObs);
-        (txHashObs, nSignedObs) = multisig.pending(pendingHashObs);
-        assertEq(nSignedObs, 2, "incorrect nSignedObs");
+
+        // Check that pending has been removed
+        vm.prank(owner1);
+        vm.expectRevert("Transaction does not exist!");
+        multisig.signTx(pendingHashObs);
     }
 
     function testSignAndSendTxWithFuzzing(
