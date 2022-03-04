@@ -420,6 +420,7 @@ contract MultisigTest is DSTest {
 
         // try sign with another owner
         vm.prank(owner2);
+        vm.expectRevert("Already signed!");
         multisig.signTx(pendingHashObs);
 
         // Check that pending has been removed
