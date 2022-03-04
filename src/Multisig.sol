@@ -16,6 +16,7 @@ contract Multisig {
     );
     event SignTx(bytes32 pendingHash, address signer);
     event UnsignTx(bytes32 pendingHash, address signer);
+    event RemoveTx(bytes32 pendingHash);
     event SendTx(bytes32 pendingHash);
     event AddOwner(address newOwner);
     event RemoveOwner(address owner);
@@ -174,17 +175,21 @@ contract Multisig {
     /// @notice Signs off on a transaction and execute it if enough signatures
     /// @param pendingHash Hash that maps to the PendingTx to unsign
     function signTx(bytes32 pendingHash) public onlyOwner {
-        // sign tx
-        // log event
-        // sendTx if enough sigs
         PendingTx storage pendingTx = pending[pendingHash];
+
         require(pendingTx.nSigned > 0, "Transaction does not exist!");
         require(!pendingTx.signers[msg.sender], "Already signed!");
+
         pendingTx.signers[msg.sender] = true;
         pendingTx.nSigned += 1;
+
         if (pending[pendingHash].nSigned >= nNeeded) {
-            sendTx(pendingHash);
             emit SignTx(pendingHash, msg.sender);
+            sendTx(pendingHash);
+            // Doesn't delete signers mapping
+            // https://docs.soliditylang.org/en/develop/types.html#delete
+            // TODO: Keep track of signers in an Array as well?
+            delete pending[pendingHash];
         }
     }
 
@@ -192,8 +197,21 @@ contract Multisig {
     /// @dev Check if they're signature exists to properly update nSigned
     /// @param pendingHash Hash that maps to the PendingTx to unsign
     function unsignTx(bytes32 pendingHash) public onlyOwner {
-        // remove signature from tx
-        // log event
+        PendingTx storage pendingTx = pending[pendingHash];
+
+        require(pendingTx.nSigned > 0, "Transaction does not exist!");
+
+        if (pendingTx.signers[msg.sender]) {
+            pendingTx.signers[msg.sender] = false;
+            pendingTx.nSigned -= 1;
+            emit UnsignTx(pendingHash, msg.sender);
+        }
+
+        if (pendingTx.nSigned == 0) {
+            // Dead proposed transaction, delete it.
+            emit RemoveTx(pendingHash);
+            delete pending[pendingHash];
+        }
     }
 
     /// @notice Wrapper to send transaction once approved
